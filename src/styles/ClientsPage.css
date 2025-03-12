@@ -1,0 +1,166 @@
+.clients-page {
+    padding: 2rem;
+  }
+  
+  h1 {
+    margin-bottom: 1rem;
+  }
+  
+  .back-button {
+    margin-right: 1rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+  }
+  
+  .create-client-btn {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+  }
+  
+  .clients-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+  }
+  
+  .clients-table th,
+  .clients-table td {
+    border: 1px solid #ddd;
+    padding: 0.75rem;
+    text-align: left;
+  }
+  
+  .clients-table th {
+    background-color: #f4f4f4;
+  }
+  
+  .edit-button,
+  .delete-button {
+    margin-right: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+  }
+  
+  .edit-button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+  }
+  
+  .delete-button {
+    background-color: #f44336;
+    color: white;
+    border: none;
+  }
+  
+  .create-client-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Modal */
+  .create-client-modal {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 400px;
+  }
+  
+  .create-client-modal h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .create-client-modal label {
+    display: block;
+    margin-bottom: 1rem;
+  }
+  
+  .create-client-modal input {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .create-client-modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+  }
+  
+  .create-client-submit-btn {
+    padding: 0.5rem 1rem;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .create-client-cancel-btn {
+    padding: 0.5rem 1rem;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .create-client-submit-btn:hover {
+    background-color: #45a049;
+  }
+  
+  .create-client-cancel-btn:hover {
+    background-color: #d32f2f;
+  }
+
+  .clients-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .clients-header-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .back-button,
+  .create-client-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .create-client-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+  }
+  
+  .back-button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+  }
+  
