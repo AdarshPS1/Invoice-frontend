@@ -213,7 +213,8 @@ const InvoicesPage = () => {
           rate: parseFloat(item.rate) || 0,
           amount: parseFloat(item.amount) || 0
         })),
-        amount: parseFloat(formData.amount) || 0
+        amount: parseFloat(formData.amount) || 0,
+        currency: formData.currency
       };
 
       await axios.post(

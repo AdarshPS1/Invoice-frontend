@@ -40,6 +40,10 @@ export const getPaymentStatusData = async () => {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       }
     });
+    
+    console.log('API Payment Status Response (Raw):', response.data);
+    
+    // Return raw data - we'll handle transformation in the Dashboard component
     return response.data;
   } catch (error) {
     console.error('Error fetching payment status:', error);

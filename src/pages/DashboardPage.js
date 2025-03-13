@@ -9,10 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
   LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell
+  Line
 } from 'recharts';
 import {
   Box,
@@ -37,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { getDashboardStats, getMonthlyData, getPaymentStatusData } from '../services/dashboardService';
 import '../styles/Dashboard.css';
+import PieChartComponent from '../services/PieChartComponent'; // Adjust the import path as necessary
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -50,8 +48,6 @@ const DashboardPage = () => {
   });
   const [monthlyData, setMonthlyData] = useState([]);
   const [paymentStatusData, setPaymentStatusData] = useState([]);
-
-  const COLORS = ['#4caf50', '#ff9800', '#f44336'];
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -68,7 +64,27 @@ const DashboardPage = () => {
 
         setStats(statsData);
         setMonthlyData(monthlyData);
-        setPaymentStatusData(paymentData);
+        
+        // Format payment data correctly
+        console.log('Original Payment Status Data:', paymentData);
+        
+        // DIRECT SOLUTION: Create payment status data directly from the stats
+        // This ensures we always have "Paid" and "Pending" statuses
+        const directPaymentData = [
+          { name: 'Paid', value: statsData.totalInvoices - statsData.pendingPayments },
+          { name: 'Pending', value: statsData.pendingPayments }
+        ];
+        
+        // Ensure values are positive numbers
+        const validPaymentData = directPaymentData.map(item => ({
+          name: item.name,
+          value: Math.max(0, item.value) // Ensure value is at least 0
+        }));
+        
+        console.log('Direct Payment Status Data:', validPaymentData);
+        
+        // Use the direct solution which we know will work correctly
+        setPaymentStatusData(validPaymentData);
       } catch (err) {
         setError('Failed to load dashboard data. Please try again later.');
         console.error('Error loading dashboard data:', err);
@@ -230,25 +246,13 @@ const DashboardPage = () => {
             <Typography variant="h6" gutterBottom>
               Payment Status
             </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={paymentStatusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {paymentStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <Box sx={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {paymentStatusData.length > 0 ? (
+                <PieChartComponent data={paymentStatusData} />
+              ) : (
+                <Typography color="text.secondary">No payment data available</Typography>
+              )}
+            </Box>
           </Paper>
         </Grid>
       </Grid>
