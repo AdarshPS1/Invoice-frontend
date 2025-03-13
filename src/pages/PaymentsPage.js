@@ -26,7 +26,7 @@ const PaymentsPage = () => {
   const fetchInvoices = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/invoices', {
+      const response = await axios.get('https://api-innoice.onrender.com/api/invoices', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInvoices(response.data);
@@ -88,7 +88,7 @@ const PaymentsPage = () => {
     try {
       setSubmitting(true);
       const response = await axios.post(
-        `http://localhost:5000/api/invoices/${selectedInvoice._id}/payments`,
+        `https://api-innoice.onrender.com/api/invoices/${selectedInvoice._id}/payments`,
         paymentPayload,
         {
           headers: { Authorization: `Bearer ${token}` },

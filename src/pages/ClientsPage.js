@@ -21,7 +21,7 @@ const ClientsPage = () => {
   const fetchClients = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/clients');
+      const response = await axios.get('https://api-innoice.onrender.com/api/clients');
       setClients(response.data);
     } catch (err) {
       setError('Failed to load clients.');
@@ -34,7 +34,7 @@ const ClientsPage = () => {
     if (!window.confirm('Are you sure you want to delete this client?')) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/clients/${id}`);
+      await axios.delete(`https://api-innoice.onrender.com/api/clients/${id}`);
       setClients(clients.filter((client) => client._id !== id));
     } catch (err) {
       alert('Failed to delete client.');
@@ -56,7 +56,7 @@ const ClientsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/clients/add', formData);
+      await axios.post('https://api-innoice.onrender.com/api/clients/add', formData);
       fetchClients();
       closeCreateClientModal();
     } catch (err) {
@@ -83,7 +83,7 @@ const ClientsPage = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/api/clients/${editFormData._id}`, editFormData);
+      await axios.put(`https://api-innoice.onrender.com/api/clients/${editFormData._id}`, editFormData);
       fetchClients();
       closeEditClientModal();
     } catch (err) {

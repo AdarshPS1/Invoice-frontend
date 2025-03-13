@@ -38,7 +38,7 @@ const InvoicesPage = () => {
   const fetchInvoices = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/invoices', {
+      const response = await axios.get('https://api-innoice.onrender.com/api/invoices', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInvoices(response.data);
@@ -52,7 +52,7 @@ const InvoicesPage = () => {
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/clients', {
+      const response = await axios.get('https://api-innoice.onrender.com/api/clients', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setClients(response.data);
@@ -89,7 +89,7 @@ const InvoicesPage = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/notifications/send-invoice-email',
+        'https://api-innoice.onrender.com/api/notifications/send-invoice-email',
         { invoiceId }, // Send only the invoice ID
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -104,7 +104,7 @@ const InvoicesPage = () => {
   const handleViewPdf = async (invoiceId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/invoices/${invoiceId}/pdf`, {
+      const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
@@ -132,7 +132,7 @@ const InvoicesPage = () => {
     if (!window.confirm('Are you sure you want to delete this invoice?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/invoices/${invoiceId}`, {
+      await axios.delete(`https://api-innoice.onrender.com/api/invoices/${invoiceId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchInvoices();
@@ -218,7 +218,7 @@ const InvoicesPage = () => {
       };
 
       await axios.post(
-        'http://localhost:5000/api/invoices',
+        'https://api-innoice.onrender.com/api/invoices',
         invoiceData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -277,7 +277,7 @@ const InvoicesPage = () => {
       console.log('Updating invoice with data:', invoiceData); // Debug log
 
       const response = await axios.put(
-        `http://localhost:5000/api/invoices/${selectedInvoice._id}`, 
+        `https://api-innoice.onrender.com/api/invoices/${selectedInvoice._id}`, 
         invoiceData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -304,7 +304,7 @@ const InvoicesPage = () => {
   const handleFilterInvoices = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/invoices', {
+      const response = await axios.get('https://api-innoice.onrender.com/api/invoices', {
         headers: { Authorization: `Bearer ${token}` },
       });
   

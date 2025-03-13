@@ -19,7 +19,7 @@ const ReportsPage = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/reports/financial-report', {
+      const response = await axios.get('https://api-innoice.onrender.com/api/reports/financial-report', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFinancialReport(response.data);
@@ -43,7 +43,7 @@ const ReportsPage = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/reports/financial-report', {
+      const response = await axios.get('https://api-innoice.onrender.com/api/reports/financial-report', {
         headers: { Authorization: `Bearer ${token}` },
         params: { startDate, endDate },
       });

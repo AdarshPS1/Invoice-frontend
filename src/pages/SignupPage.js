@@ -17,7 +17,7 @@ const SignupPage = () => {
     setError(''); // Clear any previous errors
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', formData, {
+      const res = await axios.post('https://api-innoice.onrender.com/api/auth/register', formData, {
         headers: { 'Content-Type': 'application/json' }
       });
 
