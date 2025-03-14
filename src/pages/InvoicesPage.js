@@ -115,6 +115,7 @@ const InvoicesPage = () => {
       // Show loading indicator
       setLoading(true);
       
+      // Fetch the PDF with authorization header
       const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
         headers: { 
           Authorization: `Bearer ${token}`,
@@ -125,31 +126,23 @@ const InvoicesPage = () => {
       
       console.log('PDF response received:', response.status);
       
-      // Create a blob from the PDF data
+      // Create a blob URL and open it in a new tab
       const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      setSelectedPdfUrl(pdfUrl);
-      setShowPdfModal(true);
+      
+      // Open in a new tab
+      window.open(pdfUrl, '_blank');
+      
+      // Clean up the blob URL after a delay
+      setTimeout(() => {
+        URL.revokeObjectURL(pdfUrl);
+      }, 30000); // 30 seconds should be enough for the browser to load the PDF
+      
     } catch (err) {
       console.error('Error fetching PDF:', err);
       
-      // Check for specific error types
-      if (err.response) {
-        console.error('Error response:', err.response.status, err.response.data);
-        
-        if (err.response.status === 401) {
-          alert('Authentication error. Please log in again.');
-        } else if (err.response.status === 404) {
-          alert('Invoice not found. It may have been deleted.');
-        } else {
-          alert(`Failed to load PDF (Error ${err.response.status}). Please try again later.`);
-        }
-      } else if (err.request) {
-        console.error('No response received:', err.request);
-        alert('No response from server. Please check your internet connection and try again.');
-      } else {
-        alert('Failed to load PDF. Please try again later.');
-      }
+      // Show a simple error message
+      alert('Failed to load PDF. Please try again later.');
     } finally {
       setLoading(false);
     }
