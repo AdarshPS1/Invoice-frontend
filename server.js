@@ -17,6 +17,42 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Special handling for direct access to routes that should be handled by React Router
+app.get('/signup', (req, res) => {
+  console.log('Redirecting /signup to /#/signup');
+  res.redirect('/#/signup');
+});
+
+app.get('/login', (req, res) => {
+  console.log('Redirecting /login to /#/login');
+  res.redirect('/#/login');
+});
+
+app.get('/dashboard', (req, res) => {
+  console.log('Redirecting /dashboard to /#/dashboard');
+  res.redirect('/#/dashboard');
+});
+
+app.get('/invoices', (req, res) => {
+  console.log('Redirecting /invoices to /#/invoices');
+  res.redirect('/#/invoices');
+});
+
+app.get('/payments', (req, res) => {
+  console.log('Redirecting /payments to /#/payments');
+  res.redirect('/#/payments');
+});
+
+app.get('/reports', (req, res) => {
+  console.log('Redirecting /reports to /#/reports');
+  res.redirect('/#/reports');
+});
+
+app.get('/clients', (req, res) => {
+  console.log('Redirecting /clients to /#/clients');
+  res.redirect('/#/clients');
+});
+
 // API requests should be proxied to the backend
 // This is just a placeholder - your frontend should handle API calls directly
 app.use('/api', (req, res) => {

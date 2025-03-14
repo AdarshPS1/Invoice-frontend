@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../styles/Auth.css';
 
 const LoginPage = () => {
@@ -51,7 +51,7 @@ const LoginPage = () => {
         <input type="password" name="password" value={formData.password} onChange={handleChange} required />
 
         <button type="submit">Login</button>
-        <p>Don't have an account? <a href="/signup">Sign up</a></p>
+        <p>Don't have an account? <Link to="/signup">Sign Up</Link></p>
       </form>
     </div>
   );

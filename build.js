@@ -33,6 +33,14 @@ const redirectsPath = path.join(buildDir, '_redirects');
 fs.writeFileSync(redirectsPath, '/* /index.html 200');
 console.log('Created _redirects file in build directory.');
 
+// Copy 404.html to the build directory
+const notFoundSourcePath = path.join(__dirname, 'public', '404.html');
+const notFoundDestPath = path.join(buildDir, '404.html');
+if (fs.existsSync(notFoundSourcePath)) {
+  fs.copyFileSync(notFoundSourcePath, notFoundDestPath);
+  console.log('Copied 404.html to build directory.');
+}
+
 // Create a web.config file for IIS (just in case)
 const webConfigPath = path.join(buildDir, 'web.config');
 const webConfigContent = `<?xml version="1.0"?>
