@@ -2,7 +2,7 @@ services:
   - type: web
     name: invoice-management-frontend
     env: node
-    buildCommand: ./build.sh
+    buildCommand: npm install && npm run build
     startCommand: npm run serve
     envVars:
       - key: NODE_ENV
