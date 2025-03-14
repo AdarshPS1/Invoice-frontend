@@ -115,20 +115,30 @@ const InvoicesPage = () => {
       // Show loading indicator
       setLoading(true);
       
+      console.log('Making request to PDF endpoint with authorization');
+      
       // Fetch the PDF with authorization header
       const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Accept': 'application/pdf'
         },
-        responseType: 'blob'
+        responseType: 'blob',
+        timeout: 30000 // 30 second timeout
       });
       
-      console.log('PDF response received:', response.status);
+      console.log('PDF response received:', response.status, response.headers);
+      
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Received empty PDF data');
+      }
       
       // Create a blob URL and open it in a new tab
       const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      console.log('PDF blob created, size:', pdfBlob.size);
+      
       const pdfUrl = URL.createObjectURL(pdfBlob);
+      console.log('PDF URL created:', pdfUrl);
       
       // Open in a new tab
       window.open(pdfUrl, '_blank');
@@ -136,13 +146,22 @@ const InvoicesPage = () => {
       // Clean up the blob URL after a delay
       setTimeout(() => {
         URL.revokeObjectURL(pdfUrl);
+        console.log('PDF URL revoked');
       }, 30000); // 30 seconds should be enough for the browser to load the PDF
       
     } catch (err) {
       console.error('Error fetching PDF:', err);
       
-      // Show a simple error message
-      alert('Failed to load PDF. Please try again later.');
+      // Show a more detailed error message
+      if (err.response) {
+        console.error('Error response:', err.response.status, err.response.data);
+        alert(`Failed to load PDF. Server returned: ${err.response.status} ${err.response.statusText}`);
+      } else if (err.request) {
+        console.error('No response received:', err.request);
+        alert('Failed to load PDF. No response received from server. Please check your connection and try again.');
+      } else {
+        alert(`Failed to load PDF: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
