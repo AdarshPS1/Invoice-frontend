@@ -103,11 +103,27 @@ const InvoicesPage = () => {
   
   const handleViewPdf = async (invoiceId) => {
     try {
+      console.log('Fetching PDF for invoice:', invoiceId);
+      
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        alert('You need to be logged in to view PDFs. Please log in again.');
+        return;
+      }
+      
+      // Show loading indicator
+      setLoading(true);
+      
       const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/pdf'
+        },
         responseType: 'blob'
       });
+      
+      console.log('PDF response received:', response.status);
       
       // Create a blob from the PDF data
       const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
@@ -116,7 +132,26 @@ const InvoicesPage = () => {
       setShowPdfModal(true);
     } catch (err) {
       console.error('Error fetching PDF:', err);
-      alert('Failed to load PDF. Please try again.');
+      
+      // Check for specific error types
+      if (err.response) {
+        console.error('Error response:', err.response.status, err.response.data);
+        
+        if (err.response.status === 401) {
+          alert('Authentication error. Please log in again.');
+        } else if (err.response.status === 404) {
+          alert('Invoice not found. It may have been deleted.');
+        } else {
+          alert(`Failed to load PDF (Error ${err.response.status}). Please try again later.`);
+        }
+      } else if (err.request) {
+        console.error('No response received:', err.request);
+        alert('No response from server. Please check your internet connection and try again.');
+      } else {
+        alert('Failed to load PDF. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
