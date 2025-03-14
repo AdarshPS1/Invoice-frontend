@@ -103,12 +103,12 @@ const InvoicesPage = () => {
   
   const handleViewPdf = async (invoiceId) => {
     try {
-      console.log('Fetching invoice document for:', invoiceId);
+      console.log('Fetching PDF for invoice:', invoiceId);
       
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('No authentication token found');
-        alert('You need to be logged in to view invoices. Please log in again.');
+        alert('You need to be logged in to view PDFs. Please log in again.');
         return;
       }
       
@@ -118,38 +118,20 @@ const InvoicesPage = () => {
       const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
         headers: { 
           Authorization: `Bearer ${token}`,
-          'Accept': 'application/pdf, text/html'
+          'Accept': 'application/pdf'
         },
         responseType: 'blob'
       });
       
-      console.log('Document response received:', response.status, response.headers);
+      console.log('PDF response received:', response.status);
       
-      // Determine content type
-      const contentType = response.headers['content-type'] || 'application/pdf';
-      console.log('Content type:', contentType);
-      
-      // Create a blob with the appropriate type
-      const documentBlob = new Blob([response.data], { type: contentType });
-      const documentUrl = URL.createObjectURL(documentBlob);
-      
-      if (contentType.includes('text/html')) {
-        // For HTML content, open in a new tab
-        console.log('Opening HTML invoice in new tab');
-        window.open(documentUrl, '_blank');
-        
-        // Clean up the blob URL
-        setTimeout(() => {
-          URL.revokeObjectURL(documentUrl);
-        }, 1000);
-      } else {
-        // For PDF content, show in modal
-        console.log('Showing PDF in modal');
-        setSelectedPdfUrl(documentUrl);
-        setShowPdfModal(true);
-      }
+      // Create a blob from the PDF data
+      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      setSelectedPdfUrl(pdfUrl);
+      setShowPdfModal(true);
     } catch (err) {
-      console.error('Error fetching document:', err);
+      console.error('Error fetching PDF:', err);
       
       // Check for specific error types
       if (err.response) {
@@ -160,13 +142,13 @@ const InvoicesPage = () => {
         } else if (err.response.status === 404) {
           alert('Invoice not found. It may have been deleted.');
         } else {
-          alert(`Failed to load invoice document (Error ${err.response.status}). Please try again later.`);
+          alert(`Failed to load PDF (Error ${err.response.status}). Please try again later.`);
         }
       } else if (err.request) {
         console.error('No response received:', err.request);
         alert('No response from server. Please check your internet connection and try again.');
       } else {
-        alert('Failed to load invoice document. Please try again later.');
+        alert('Failed to load PDF. Please try again later.');
       }
     } finally {
       setLoading(false);
