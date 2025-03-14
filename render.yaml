@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: invoice-management-frontend
+    env: node
+    buildCommand: ./build.sh
+    startCommand: npm run serve
+    envVars:
+      - key: NODE_ENV
+        value: production 
