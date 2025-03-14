@@ -6,4 +6,15 @@ services:
     startCommand: npm run serve
     envVars:
       - key: NODE_ENV
-        value: production 
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - src/**
+        - public/**
+        - package.json
+        - package-lock.json
+        - build.js
+        - server.js 
