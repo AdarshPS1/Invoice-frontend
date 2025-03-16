@@ -26,9 +26,6 @@ const InvoicesPage = () => {
   const totalSteps = 3;
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState(null);
-  const [currentInvoiceId, setCurrentInvoiceId] = useState(null);
 
   const navigate = useNavigate();
   const userRole = localStorage.getItem('role');
@@ -106,112 +103,25 @@ const InvoicesPage = () => {
   
   const handleViewPdf = async (invoiceId) => {
     try {
-      setPdfLoading(true);
-      setPdfError(null);
-      setShowPdfModal(true);
-      setCurrentInvoiceId(invoiceId);
-      
       const token = localStorage.getItem('token');
-      console.log(`Fetching PDF for invoice ID: ${invoiceId}`);
+      const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
       
-      // Create a direct link to the PDF
-      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`;
-      
-      try {
-        // Use fetch instead of axios for better blob handling
-        const response = await fetch(pdfUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/pdf'
-          },
-          // Set a longer timeout
-          signal: AbortSignal.timeout(60000) // 60 second timeout
-        });
-        
-        console.log('PDF response status:', response.status);
-        
-        if (!response.ok) {
-          // If response is not OK, try to parse error message
-          const errorText = await response.text();
-          let errorMessage = `Server error (${response.status})`;
-          
-          try {
-            const errorJson = JSON.parse(errorText);
-            errorMessage = errorJson.message || errorMessage;
-          } catch (e) {
-            // If not JSON, use the text as is if it's not too long
-            if (errorText && errorText.length < 100) {
-              errorMessage = errorText;
-            }
-          }
-          
-          throw new Error(errorMessage);
-        }
-        
-        // Check content type
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/pdf')) {
-          console.warn('Response is not a PDF, content type:', contentType);
-          
-          // If not a PDF, show error and offer direct link
-          setPdfError('Server did not return a PDF. Try downloading directly.');
-          setSelectedPdfUrl(pdfUrl);
-          return;
-        }
-        
-        // Get the PDF data
-        const pdfBlob = await response.blob();
-        
-        // Check if blob is valid and not empty
-        if (!pdfBlob || pdfBlob.size === 0) {
-          throw new Error('Received empty PDF data');
-        }
-        
-        // Create object URL
-        const objectUrl = URL.createObjectURL(pdfBlob);
-        setSelectedPdfUrl(objectUrl);
-        
-        // Also provide a direct download option
-        const downloadLink = document.createElement('a');
-        downloadLink.href = objectUrl;
-        downloadLink.download = `Invoice_${invoiceId}.pdf`;
-        
-      } catch (fetchError) {
-        console.error('Error fetching PDF:', fetchError);
-        
-        if (fetchError.name === 'AbortError' || fetchError.name === 'TimeoutError') {
-          setPdfError('Request timed out. The server took too long to respond. Try downloading directly.');
-        } else {
-          setPdfError(`${fetchError.message}. Try downloading directly.`);
-        }
-        
-        // Store the direct URL for download button
-        setSelectedPdfUrl(pdfUrl);
-      }
+      // Create a blob from the PDF data
+      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      setSelectedPdfUrl(pdfUrl);
+      setShowPdfModal(true);
     } catch (err) {
-      console.error('Unexpected error in handleViewPdf:', err);
-      setPdfError('An unexpected error occurred. Please try again later.');
-    } finally {
-      setPdfLoading(false);
-    }
-  };
-
-  const handleDownloadPdf = () => {
-    if (selectedPdfUrl && currentInvoiceId) {
-      const downloadLink = document.createElement('a');
-      downloadLink.href = selectedPdfUrl;
-      downloadLink.download = `Invoice_${currentInvoiceId}.pdf`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
+      console.error('Error fetching PDF:', err);
+      alert('Failed to load PDF. Please try again.');
     }
   };
 
   const handleClosePdfModal = () => {
     setShowPdfModal(false);
-    setPdfError(null);
-    setCurrentInvoiceId(null);
     if (selectedPdfUrl) {
       URL.revokeObjectURL(selectedPdfUrl);
       setSelectedPdfUrl(null);
@@ -811,55 +721,14 @@ const InvoicesPage = () => {
         <button className="close-button" onClick={handleClosePdfModal}>×</button>
       </div>
       <div className="pdf-modal-content">
-        {pdfLoading && (
-          <div className="pdf-loading">
-            <div className="loading-spinner"></div>
-            <p>Loading PDF...</p>
-            <p className="loading-message">This may take a few moments. The server is generating your PDF.</p>
-          </div>
-        )}
-        {pdfError && (
-          <div className="pdf-error">
-            <div className="error-icon">⚠️</div>
-            <h3>Error Loading PDF</h3>
-            <p>{pdfError}</p>
-            <div className="error-actions">
-              <button onClick={() => {
-                setPdfError(null);
-                const invoiceId = currentInvoiceId;
-                if (invoiceId) {
-                  handleViewPdf(invoiceId);
-                }
-              }} className="retry-button">
-                Try Again
-              </button>
-              {selectedPdfUrl && (
-                <button onClick={handleDownloadPdf} className="download-button">
-                  Download
-                </button>
-              )}
-              <button onClick={handleClosePdfModal} className="close-error-button">
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-        {!pdfLoading && !pdfError && selectedPdfUrl && (
-          <div className="pdf-viewer-container">
-            <div className="pdf-toolbar">
-              <button onClick={handleDownloadPdf} className="download-button">
-                Download
-              </button>
-            </div>
-            <iframe
-              src={selectedPdfUrl}
-              title="Invoice PDF"
-              width="100%"
-              height="100%"
-              style={{ border: 'none' }}
-              allowFullScreen
-            />
-          </div>
+        {selectedPdfUrl && (
+          <iframe
+            src={selectedPdfUrl}
+            title="Invoice PDF"
+            width="100%"
+            height="100%"
+            style={{ border: 'none' }}
+          />
         )}
       </div>
     </div>
