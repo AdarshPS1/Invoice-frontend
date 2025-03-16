@@ -28,6 +28,7 @@ const InvoicesPage = () => {
   const [selectedPdfUrl, setSelectedPdfUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState(null);
+  const [currentInvoiceId, setCurrentInvoiceId] = useState(null);
 
   const navigate = useNavigate();
   const userRole = localStorage.getItem('role');
@@ -108,28 +109,83 @@ const InvoicesPage = () => {
       setPdfLoading(true);
       setPdfError(null);
       setShowPdfModal(true);
+      setCurrentInvoiceId(invoiceId);
       
       const token = localStorage.getItem('token');
       console.log(`Fetching PDF for invoice ID: ${invoiceId}`);
       
-      const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Accept': 'application/pdf'
-        },
-        responseType: 'blob'
-      });
+      // Add a timeout to the request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
-      console.log('PDF response received:', response.status);
-      
-      // Create a blob from the PDF data
-      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      setSelectedPdfUrl(pdfUrl);
+      try {
+        const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Accept': 'application/pdf'
+          },
+          responseType: 'blob',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('PDF response received:', response.status, response.headers);
+        
+        // Check if we got a PDF (by content type or checking if it's a blob)
+        const contentType = response.headers['content-type'];
+        if (contentType && contentType.includes('application/pdf')) {
+          // Create a blob from the PDF data
+          const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          setSelectedPdfUrl(pdfUrl);
+        } else {
+          // If the response is not a PDF, try to parse it as JSON for error details
+          try {
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                const errorData = JSON.parse(reader.result);
+                setPdfError(`Error: ${errorData.message || 'Unknown error'}`);
+              } catch (parseErr) {
+                setPdfError('Failed to load PDF. The server returned an invalid response.');
+              }
+            };
+            reader.onerror = () => {
+              setPdfError('Failed to load PDF. Please try again later.');
+            };
+            reader.readAsText(response.data);
+          } catch (blobErr) {
+            setPdfError('Failed to process server response. Please try again later.');
+          }
+        }
+      } catch (axiosErr) {
+        clearTimeout(timeoutId);
+        
+        console.error('Error fetching PDF:', axiosErr);
+        
+        if (axiosErr.name === 'AbortError' || axiosErr.code === 'ECONNABORTED') {
+          setPdfError('Request timed out. The server took too long to respond.');
+        } else if (axiosErr.response) {
+          // The server responded with an error status
+          if (axiosErr.response.status === 404) {
+            setPdfError('Invoice not found. It may have been deleted.');
+          } else if (axiosErr.response.status === 500) {
+            setPdfError('Server error while generating PDF. Please try again later.');
+          } else {
+            setPdfError(`Error (${axiosErr.response.status}): ${axiosErr.response.data?.message || 'Unknown error'}`);
+          }
+        } else if (axiosErr.request) {
+          // The request was made but no response was received
+          setPdfError('No response from server. Please check your connection and try again.');
+        } else {
+          // Something else caused the error
+          setPdfError('Failed to load PDF: ' + axiosErr.message);
+        }
+      }
     } catch (err) {
-      console.error('Error fetching PDF:', err);
-      setPdfError('Failed to load PDF. Please try again later.');
-      // Don't close the modal, just show the error
+      console.error('Unexpected error in handleViewPdf:', err);
+      setPdfError('An unexpected error occurred. Please try again later.');
     } finally {
       setPdfLoading(false);
     }
@@ -138,6 +194,7 @@ const InvoicesPage = () => {
   const handleClosePdfModal = () => {
     setShowPdfModal(false);
     setPdfError(null);
+    setCurrentInvoiceId(null);
     if (selectedPdfUrl) {
       URL.revokeObjectURL(selectedPdfUrl);
       setSelectedPdfUrl(null);
@@ -739,13 +796,30 @@ const InvoicesPage = () => {
       <div className="pdf-modal-content">
         {pdfLoading && (
           <div className="pdf-loading">
+            <div className="loading-spinner"></div>
             <p>Loading PDF...</p>
+            <p className="loading-message">This may take a few moments. The server is generating your PDF.</p>
           </div>
         )}
         {pdfError && (
           <div className="pdf-error">
+            <div className="error-icon">⚠️</div>
+            <h3>Error Loading PDF</h3>
             <p>{pdfError}</p>
-            <button onClick={() => setPdfError(null)}>Try Again</button>
+            <div className="error-actions">
+              <button onClick={() => {
+                setPdfError(null);
+                const invoiceId = currentInvoiceId;
+                if (invoiceId) {
+                  handleViewPdf(invoiceId);
+                }
+              }} className="retry-button">
+                Try Again
+              </button>
+              <button onClick={handleClosePdfModal} className="close-error-button">
+                Close
+              </button>
+            </div>
           </div>
         )}
         {!pdfLoading && !pdfError && selectedPdfUrl && (
@@ -755,6 +829,7 @@ const InvoicesPage = () => {
             width="100%"
             height="100%"
             style={{ border: 'none' }}
+            allowFullScreen
           />
         )}
       </div>
