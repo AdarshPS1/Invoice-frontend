@@ -119,12 +119,17 @@ const InvoicesPage = () => {
     }
   };
   
-  const handleViewPdf = async (invoiceId) => {
+  const handleViewPdf = async (invoiceId, forceRefresh = false) => {
     try {
       const token = localStorage.getItem('token');
       
+      // Store the current invoice ID for the refresh button
+      setSelectedInvoice({ _id: invoiceId });
+      
       // Use the direct view-pdf endpoint with token in the URL for authentication
-      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/view-pdf?token=${token}`;
+      // Add refresh parameter if needed to force regeneration of PDF
+      const refreshParam = forceRefresh ? '&refresh=true' : '';
+      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/view-pdf?token=${token}${refreshParam}`;
       
       // Set the URL directly - no need to create a blob
       setSelectedPdfUrl(pdfUrl);
@@ -138,6 +143,10 @@ const InvoicesPage = () => {
   const handleClosePdfModal = () => {
     setShowPdfModal(false);
     setSelectedPdfUrl(null);
+    // Only reset selectedInvoice if we're not in preview mode
+    if (!showPreviewModal) {
+      setSelectedInvoice(null);
+    }
   };
 
   const handleDeleteInvoice = async (invoiceId) => {
@@ -756,7 +765,24 @@ const InvoicesPage = () => {
     <div className="pdf-modal" style={{ width: '90%', height: '90%', maxWidth: '1200px' }}>
       <div className="pdf-modal-header">
         <h2>Invoice PDF</h2>
-        <button className="close-button" onClick={handleClosePdfModal}>×</button>
+        <div className="pdf-modal-actions">
+          <button 
+            className="refresh-button" 
+            onClick={() => handleViewPdf(selectedInvoice?._id, true)}
+            style={{ 
+              marginRight: '10px', 
+              padding: '5px 10px', 
+              background: '#4CAF50', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Refresh PDF
+          </button>
+          <button className="close-button" onClick={handleClosePdfModal}>×</button>
+        </div>
       </div>
       <div className="pdf-modal-content" style={{ height: 'calc(100% - 60px)' }}>
         {selectedPdfUrl ? (
