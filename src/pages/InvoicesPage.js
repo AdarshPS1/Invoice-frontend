@@ -69,8 +69,9 @@ const InvoicesPage = () => {
     try {
       // Fetch the latest invoice data
       const token = localStorage.getItem('token');
+      const timestamp = new Date().getTime(); // Add timestamp to prevent caching
       const response = await axios.get(
-        `https://api-innoice.onrender.com/api/invoices/${invoice._id}`,
+        `https://api-innoice.onrender.com/api/invoices/${invoice._id}?t=${timestamp}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -78,22 +79,30 @@ const InvoicesPage = () => {
       
       // Use the latest data
       const latestInvoice = response.data;
+      console.log('Latest invoice data for preview:', JSON.stringify(latestInvoice, null, 2));
+      
       setSelectedInvoice(latestInvoice);
       setCurrentStep(1);
+      
+      // Ensure all fields are properly set
       setFormData({
         client: latestInvoice.client?._id || '',
-        amount: latestInvoice.amount,
+        amount: latestInvoice.amount || 0,
         dueDate: latestInvoice.dueDate ? new Date(latestInvoice.dueDate).toISOString().split('T')[0] : '',
-        currency: latestInvoice.currency,
-        items: latestInvoice.items.map(item => ({
-          slNo: item.slNo,
-          description: item.description,
-          sac: item.sac,
-          quantity: item.quantity,
-          rate: item.rate,
-          amount: item.amount
-        }))
+        currency: latestInvoice.currency || 'INR',
+        items: Array.isArray(latestInvoice.items) && latestInvoice.items.length > 0 
+          ? latestInvoice.items.map((item, index) => ({
+              slNo: index + 1,
+              description: item.description || '',
+              sac: item.sac || '',
+              quantity: item.quantity || 0,
+              rate: item.rate || 0,
+              amount: item.amount || (item.quantity * item.rate) || 0
+            }))
+          : [{ slNo: 1, description: '', sac: '', quantity: '', rate: '', amount: '' }]
       });
+      
+      console.log('Form data set for preview:', JSON.stringify(formData, null, 2));
       setShowPreviewModal(true);
     } catch (err) {
       console.error('Error fetching latest invoice data:', err);
@@ -285,9 +294,8 @@ const InvoicesPage = () => {
         client: formData.client,
         dueDate: formData.dueDate,
         items: formData.items.map(item => ({
-          slNo: item.slNo,
-          description: item.description,
-          sac: item.sac,
+          description: item.description || 'No description',
+          sac: item.sac || '998314',
           quantity: parseFloat(item.quantity) || 0,
           rate: parseFloat(item.rate) || 0,
           amount: parseFloat(item.amount) || 0
@@ -296,7 +304,7 @@ const InvoicesPage = () => {
         currency: formData.currency
       };
 
-      console.log('Updating invoice with data:', invoiceData); // Debug log
+      console.log('Updating invoice with data:', JSON.stringify(invoiceData, null, 2)); // Enhanced debug log
 
       const response = await axios.put(
         `https://api-innoice.onrender.com/api/invoices/${selectedInvoice._id}`, 
@@ -306,14 +314,20 @@ const InvoicesPage = () => {
         }
       );
 
-      console.log('Update response:', response.data); // Debug log
+      console.log('Update response:', JSON.stringify(response.data, null, 2)); // Enhanced debug log
 
       if (response.data) {
         // Close modal first to prevent any state issues
         handleClosePreviewModal();
         
-        // Then refresh invoices
-        await fetchInvoices();
+        // Then refresh invoices with a timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const refreshResponse = await axios.get(`https://api-innoice.onrender.com/api/invoices?t=${timestamp}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        console.log('Refreshed invoices:', JSON.stringify(refreshResponse.data, null, 2)); // Debug log
+        setInvoices(refreshResponse.data);
         
         // Show success message
         alert('Invoice updated successfully!');
