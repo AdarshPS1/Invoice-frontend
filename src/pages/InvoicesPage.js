@@ -129,7 +129,8 @@ const InvoicesPage = () => {
       // Use the direct view-pdf endpoint with token in the URL for authentication
       // Add refresh parameter if needed to force regeneration of PDF
       const refreshParam = forceRefresh ? '&refresh=true' : '';
-      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/view-pdf?token=${token}${refreshParam}`;
+      const timestamp = new Date().getTime(); // Add timestamp to prevent caching
+      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/view-pdf?token=${token}${refreshParam}&t=${timestamp}`;
       
       // Set the URL directly - no need to create a blob
       setSelectedPdfUrl(pdfUrl);
