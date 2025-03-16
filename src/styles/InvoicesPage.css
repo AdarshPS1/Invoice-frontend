@@ -921,6 +921,45 @@
   background: white;
 }
 
+/* PDF loading and error states */
+.pdf-loading, .pdf-error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+}
+
+.pdf-loading p {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.pdf-error p {
+  font-size: 18px;
+  color: #d32f2f;
+  margin-bottom: 20px;
+}
+
+.pdf-error button {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.pdf-error button:hover {
+  background-color: #1565c0;
+}
+
 /* Ensure proper spacing between action buttons */
 .invoice-table td button {
   margin-right: 8px;

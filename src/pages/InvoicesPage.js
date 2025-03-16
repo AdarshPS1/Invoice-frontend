@@ -26,6 +26,8 @@ const InvoicesPage = () => {
   const totalSteps = 3;
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState(null);
 
   const navigate = useNavigate();
   const userRole = localStorage.getItem('role');
@@ -103,25 +105,39 @@ const InvoicesPage = () => {
   
   const handleViewPdf = async (invoiceId) => {
     try {
+      setPdfLoading(true);
+      setPdfError(null);
+      setShowPdfModal(true);
+      
       const token = localStorage.getItem('token');
+      console.log(`Fetching PDF for invoice ID: ${invoiceId}`);
+      
       const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/pdf'
+        },
         responseType: 'blob'
       });
+      
+      console.log('PDF response received:', response.status);
       
       // Create a blob from the PDF data
       const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
       const pdfUrl = URL.createObjectURL(pdfBlob);
       setSelectedPdfUrl(pdfUrl);
-      setShowPdfModal(true);
     } catch (err) {
       console.error('Error fetching PDF:', err);
-      alert('Failed to load PDF. Please try again.');
+      setPdfError('Failed to load PDF. Please try again later.');
+      // Don't close the modal, just show the error
+    } finally {
+      setPdfLoading(false);
     }
   };
 
   const handleClosePdfModal = () => {
     setShowPdfModal(false);
+    setPdfError(null);
     if (selectedPdfUrl) {
       URL.revokeObjectURL(selectedPdfUrl);
       setSelectedPdfUrl(null);
@@ -721,7 +737,18 @@ const InvoicesPage = () => {
         <button className="close-button" onClick={handleClosePdfModal}>×</button>
       </div>
       <div className="pdf-modal-content">
-        {selectedPdfUrl && (
+        {pdfLoading && (
+          <div className="pdf-loading">
+            <p>Loading PDF...</p>
+          </div>
+        )}
+        {pdfError && (
+          <div className="pdf-error">
+            <p>{pdfError}</p>
+            <button onClick={() => setPdfError(null)}>Try Again</button>
+          </div>
+        )}
+        {!pdfLoading && !pdfError && selectedPdfUrl && (
           <iframe
             src={selectedPdfUrl}
             title="Invoice PDF"
