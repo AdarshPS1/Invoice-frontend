@@ -38,7 +38,9 @@ const InvoicesPage = () => {
   const fetchInvoices = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('https://api-innoice.onrender.com/api/invoices', {
+      // Add a timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await axios.get(`https://api-innoice.onrender.com/api/invoices?t=${timestamp}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInvoices(response.data);
@@ -63,24 +65,40 @@ const InvoicesPage = () => {
 
   const handleBackToDashboard = () => navigate('/dashboard');
 
-  const handlePreviewInvoice = (invoice) => {
-    setSelectedInvoice(invoice);
-    setCurrentStep(1);
-    setFormData({
-      client: invoice.client?._id || '',
-      amount: invoice.amount,
-      dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : '',
-      currency: invoice.currency,
-      items: invoice.items.map(item => ({
-        slNo: item.slNo,
-        description: item.description,
-        sac: item.sac,
-        quantity: item.quantity,
-        rate: item.rate,
-        amount: item.amount
-      }))
-    });
-    setShowPreviewModal(true);
+  const handlePreviewInvoice = async (invoice) => {
+    try {
+      // Fetch the latest invoice data
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `https://api-innoice.onrender.com/api/invoices/${invoice._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      
+      // Use the latest data
+      const latestInvoice = response.data;
+      setSelectedInvoice(latestInvoice);
+      setCurrentStep(1);
+      setFormData({
+        client: latestInvoice.client?._id || '',
+        amount: latestInvoice.amount,
+        dueDate: latestInvoice.dueDate ? new Date(latestInvoice.dueDate).toISOString().split('T')[0] : '',
+        currency: latestInvoice.currency,
+        items: latestInvoice.items.map(item => ({
+          slNo: item.slNo,
+          description: item.description,
+          sac: item.sac,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.amount
+        }))
+      });
+      setShowPreviewModal(true);
+    } catch (err) {
+      console.error('Error fetching latest invoice data:', err);
+      alert('Failed to load the latest invoice data. Please try again.');
+    }
   };
 
   const handleGenerateInvoice = async (invoiceId) => {
@@ -287,8 +305,18 @@ const InvoicesPage = () => {
       console.log('Update response:', response.data); // Debug log
 
       if (response.data) {
-        // Refresh invoices and close modal
+        // Refresh invoices
         await fetchInvoices();
+        
+        // Get the updated invoice data
+        const updatedInvoiceResponse = await axios.get(
+          `https://api-innoice.onrender.com/api/invoices/${selectedInvoice._id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        
+        // Close modal and show success message
         handleClosePreviewModal();
         alert('Invoice updated successfully!');
       } else {
@@ -583,7 +611,22 @@ const InvoicesPage = () => {
                 <button className="view-button" onClick={() => handleViewPdf(invoice._id)}>
                   View
                 </button>
-                <button className="preview-button" onClick={() => handlePreviewInvoice(invoice)} disabled={invoice.status === 'Paid'}>
+                <button 
+                  className="preview-button" 
+                  onClick={() => {
+                    // Force a refresh of invoices before showing preview
+                    fetchInvoices().then(() => {
+                      // Find the refreshed invoice in the updated invoices array
+                      const refreshedInvoice = invoices.find(inv => inv._id === invoice._id);
+                      if (refreshedInvoice) {
+                        handlePreviewInvoice(refreshedInvoice);
+                      } else {
+                        handlePreviewInvoice(invoice);
+                      }
+                    });
+                  }} 
+                  disabled={invoice.status === 'Paid'}
+                >
                   Preview
                 </button>
                 <button className="generate-button" onClick={() => handleGenerateInvoice(invoice._id)} disabled={invoice.status === 'Paid'}>
