@@ -122,14 +122,11 @@ const InvoicesPage = () => {
   const handleViewPdf = async (invoiceId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob'
-      });
       
-      // Create a blob from the PDF data
-      const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
-      const pdfUrl = URL.createObjectURL(pdfBlob);
+      // Use the direct view-pdf endpoint with token in the URL for authentication
+      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/view-pdf?token=${token}`;
+      
+      // Set the URL directly - no need to create a blob
       setSelectedPdfUrl(pdfUrl);
       setShowPdfModal(true);
     } catch (err) {
@@ -140,10 +137,7 @@ const InvoicesPage = () => {
 
   const handleClosePdfModal = () => {
     setShowPdfModal(false);
-    if (selectedPdfUrl) {
-      URL.revokeObjectURL(selectedPdfUrl);
-      setSelectedPdfUrl(null);
-    }
+    setSelectedPdfUrl(null);
   };
 
   const handleDeleteInvoice = async (invoiceId) => {
@@ -759,20 +753,25 @@ const InvoicesPage = () => {
 
 {showPdfModal && (
   <div className="pdf-modal-overlay">
-    <div className="pdf-modal">
+    <div className="pdf-modal" style={{ width: '90%', height: '90%', maxWidth: '1200px' }}>
       <div className="pdf-modal-header">
         <h2>Invoice PDF</h2>
         <button className="close-button" onClick={handleClosePdfModal}>×</button>
       </div>
-      <div className="pdf-modal-content">
-        {selectedPdfUrl && (
+      <div className="pdf-modal-content" style={{ height: 'calc(100% - 60px)' }}>
+        {selectedPdfUrl ? (
           <iframe
             src={selectedPdfUrl}
             title="Invoice PDF"
             width="100%"
             height="100%"
-            style={{ border: 'none' }}
+            frameBorder="0"
+            allowFullScreen
           />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <p>Loading PDF...</p>
+          </div>
         )}
       </div>
     </div>
