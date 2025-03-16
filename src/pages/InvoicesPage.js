@@ -69,9 +69,8 @@ const InvoicesPage = () => {
     try {
       // Fetch the latest invoice data
       const token = localStorage.getItem('token');
-      const timestamp = new Date().getTime(); // Add timestamp to prevent caching
       const response = await axios.get(
-        `https://api-innoice.onrender.com/api/invoices/${invoice._id}?t=${timestamp}`,
+        `https://api-innoice.onrender.com/api/invoices/${invoice._id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -79,30 +78,22 @@ const InvoicesPage = () => {
       
       // Use the latest data
       const latestInvoice = response.data;
-      console.log('Latest invoice data for preview:', JSON.stringify(latestInvoice, null, 2));
-      
       setSelectedInvoice(latestInvoice);
       setCurrentStep(1);
-      
-      // Ensure all fields are properly set
       setFormData({
         client: latestInvoice.client?._id || '',
-        amount: latestInvoice.amount || 0,
+        amount: latestInvoice.amount,
         dueDate: latestInvoice.dueDate ? new Date(latestInvoice.dueDate).toISOString().split('T')[0] : '',
-        currency: latestInvoice.currency || 'INR',
-        items: Array.isArray(latestInvoice.items) && latestInvoice.items.length > 0 
-          ? latestInvoice.items.map((item, index) => ({
-              slNo: index + 1,
-              description: item.description || '',
-              sac: item.sac || '',
-              quantity: item.quantity || 0,
-              rate: item.rate || 0,
-              amount: item.amount || (item.quantity * item.rate) || 0
-            }))
-          : [{ slNo: 1, description: '', sac: '', quantity: '', rate: '', amount: '' }]
+        currency: latestInvoice.currency,
+        items: latestInvoice.items.map(item => ({
+          slNo: item.slNo,
+          description: item.description,
+          sac: item.sac,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.amount
+        }))
       });
-      
-      console.log('Form data set for preview:', JSON.stringify(formData, null, 2));
       setShowPreviewModal(true);
     } catch (err) {
       console.error('Error fetching latest invoice data:', err);
@@ -128,17 +119,12 @@ const InvoicesPage = () => {
     }
   };
   
-  const handleViewPdf = async (invoiceId, forceRefresh = false) => {
+  const handleViewPdf = async (invoiceId) => {
     try {
       const token = localStorage.getItem('token');
       
-      // Store the current invoice ID for the refresh button
-      setSelectedInvoice({ _id: invoiceId });
-      
       // Use the direct view-pdf endpoint with token in the URL for authentication
-      // Add refresh parameter if needed to force regeneration of PDF
-      const refreshParam = forceRefresh ? '&refresh=true' : '';
-      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/view-pdf?token=${token}${refreshParam}`;
+      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/view-pdf?token=${token}`;
       
       // Set the URL directly - no need to create a blob
       setSelectedPdfUrl(pdfUrl);
@@ -152,10 +138,6 @@ const InvoicesPage = () => {
   const handleClosePdfModal = () => {
     setShowPdfModal(false);
     setSelectedPdfUrl(null);
-    // Only reset selectedInvoice if we're not in preview mode
-    if (!showPreviewModal) {
-      setSelectedInvoice(null);
-    }
   };
 
   const handleDeleteInvoice = async (invoiceId) => {
@@ -294,8 +276,9 @@ const InvoicesPage = () => {
         client: formData.client,
         dueDate: formData.dueDate,
         items: formData.items.map(item => ({
-          description: item.description || 'No description',
-          sac: item.sac || '998314',
+          slNo: item.slNo,
+          description: item.description,
+          sac: item.sac,
           quantity: parseFloat(item.quantity) || 0,
           rate: parseFloat(item.rate) || 0,
           amount: parseFloat(item.amount) || 0
@@ -304,7 +287,7 @@ const InvoicesPage = () => {
         currency: formData.currency
       };
 
-      console.log('Updating invoice with data:', JSON.stringify(invoiceData, null, 2)); // Enhanced debug log
+      console.log('Updating invoice with data:', invoiceData); // Debug log
 
       const response = await axios.put(
         `https://api-innoice.onrender.com/api/invoices/${selectedInvoice._id}`, 
@@ -314,20 +297,14 @@ const InvoicesPage = () => {
         }
       );
 
-      console.log('Update response:', JSON.stringify(response.data, null, 2)); // Enhanced debug log
+      console.log('Update response:', response.data); // Debug log
 
       if (response.data) {
         // Close modal first to prevent any state issues
         handleClosePreviewModal();
         
-        // Then refresh invoices with a timestamp to prevent caching
-        const timestamp = new Date().getTime();
-        const refreshResponse = await axios.get(`https://api-innoice.onrender.com/api/invoices?t=${timestamp}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        console.log('Refreshed invoices:', JSON.stringify(refreshResponse.data, null, 2)); // Debug log
-        setInvoices(refreshResponse.data);
+        // Then refresh invoices
+        await fetchInvoices();
         
         // Show success message
         alert('Invoice updated successfully!');
@@ -779,24 +756,7 @@ const InvoicesPage = () => {
     <div className="pdf-modal" style={{ width: '90%', height: '90%', maxWidth: '1200px' }}>
       <div className="pdf-modal-header">
         <h2>Invoice PDF</h2>
-        <div className="pdf-modal-actions">
-          <button 
-            className="refresh-button" 
-            onClick={() => handleViewPdf(selectedInvoice?._id, true)}
-            style={{ 
-              marginRight: '10px', 
-              padding: '5px 10px', 
-              background: '#4CAF50', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Refresh PDF
-          </button>
-          <button className="close-button" onClick={handleClosePdfModal}>×</button>
-        </div>
+        <button className="close-button" onClick={handleClosePdfModal}>×</button>
       </div>
       <div className="pdf-modal-content" style={{ height: 'calc(100% - 60px)' }}>
         {selectedPdfUrl ? (
