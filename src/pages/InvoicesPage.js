@@ -289,7 +289,8 @@ const InvoicesPage = () => {
           rate: parseFloat(item.rate) || 0,
           amount: parseFloat(item.amount) || 0
         })),
-        amount: parseFloat(formData.amount) || 0
+        amount: parseFloat(formData.amount) || 0,
+        currency: formData.currency
       };
 
       console.log('Updating invoice with data:', invoiceData); // Debug log
@@ -305,19 +306,13 @@ const InvoicesPage = () => {
       console.log('Update response:', response.data); // Debug log
 
       if (response.data) {
-        // Refresh invoices
+        // Close modal first to prevent any state issues
+        handleClosePreviewModal();
+        
+        // Then refresh invoices
         await fetchInvoices();
         
-        // Get the updated invoice data
-        const updatedInvoiceResponse = await axios.get(
-          `https://api-innoice.onrender.com/api/invoices/${selectedInvoice._id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        
-        // Close modal and show success message
-        handleClosePreviewModal();
+        // Show success message
         alert('Invoice updated successfully!');
       } else {
         throw new Error('No response data received');
@@ -613,17 +608,23 @@ const InvoicesPage = () => {
                 </button>
                 <button 
                   className="preview-button" 
-                  onClick={() => {
-                    // Force a refresh of invoices before showing preview
-                    fetchInvoices().then(() => {
-                      // Find the refreshed invoice in the updated invoices array
-                      const refreshedInvoice = invoices.find(inv => inv._id === invoice._id);
-                      if (refreshedInvoice) {
-                        handlePreviewInvoice(refreshedInvoice);
-                      } else {
-                        handlePreviewInvoice(invoice);
-                      }
-                    });
+                  onClick={async () => {
+                    try {
+                      // Get the latest invoice data directly from the server
+                      const token = localStorage.getItem('token');
+                      const response = await axios.get(
+                        `https://api-innoice.onrender.com/api/invoices/${invoice._id}`,
+                        {
+                          headers: { Authorization: `Bearer ${token}` },
+                        }
+                      );
+                      
+                      // Use the latest data from the server
+                      handlePreviewInvoice(response.data);
+                    } catch (err) {
+                      console.error('Error fetching latest invoice data:', err);
+                      alert('Failed to load the latest invoice data. Please try again.');
+                    }
                   }} 
                   disabled={invoice.status === 'Paid'}
                 >
