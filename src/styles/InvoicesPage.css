@@ -1048,7 +1048,7 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.open-tab-button {
+.open-tab-button, .download-button {
   display: inline-block;
   padding: 8px 16px;
   background-color: #17a2b8;
@@ -1057,9 +1057,11 @@
   border-radius: 4px;
   font-size: 0.9rem;
   transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
 }
 
-.open-tab-button:hover {
+.open-tab-button:hover, .download-button:hover {
   background-color: #138496;
   text-decoration: none;
   color: white;
@@ -1072,7 +1074,7 @@
   justify-content: center;
 }
 
-.error-actions .open-tab-button {
+.error-actions .open-tab-button, .error-actions .download-button {
   padding: 10px 20px;
   font-size: 1rem;
 }

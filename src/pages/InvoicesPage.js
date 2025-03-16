@@ -114,11 +114,8 @@ const InvoicesPage = () => {
       const token = localStorage.getItem('token');
       console.log(`Fetching PDF for invoice ID: ${invoiceId}`);
       
-      // Create a direct link to the PDF that will open in a new tab as fallback
+      // Create a direct link to the PDF
       const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`;
-      const directPdfLink = document.createElement('a');
-      directPdfLink.href = pdfUrl;
-      directPdfLink.target = '_blank';
       
       try {
         // Use fetch instead of axios for better blob handling
@@ -158,7 +155,7 @@ const InvoicesPage = () => {
           console.warn('Response is not a PDF, content type:', contentType);
           
           // If not a PDF, show error and offer direct link
-          setPdfError('Server did not return a PDF. Click "Open in New Tab" to try direct download.');
+          setPdfError('Server did not return a PDF. Try downloading directly.');
           setSelectedPdfUrl(pdfUrl);
           return;
         }
@@ -175,16 +172,21 @@ const InvoicesPage = () => {
         const objectUrl = URL.createObjectURL(pdfBlob);
         setSelectedPdfUrl(objectUrl);
         
+        // Also provide a direct download option
+        const downloadLink = document.createElement('a');
+        downloadLink.href = objectUrl;
+        downloadLink.download = `Invoice_${invoiceId}.pdf`;
+        
       } catch (fetchError) {
         console.error('Error fetching PDF:', fetchError);
         
         if (fetchError.name === 'AbortError' || fetchError.name === 'TimeoutError') {
-          setPdfError('Request timed out. The server took too long to respond. Try opening in a new tab.');
+          setPdfError('Request timed out. The server took too long to respond. Try downloading directly.');
         } else {
-          setPdfError(`${fetchError.message}. Try opening in a new tab.`);
+          setPdfError(`${fetchError.message}. Try downloading directly.`);
         }
         
-        // Store the direct URL for "Open in New Tab" button
+        // Store the direct URL for download button
         setSelectedPdfUrl(pdfUrl);
       }
     } catch (err) {
@@ -192,6 +194,17 @@ const InvoicesPage = () => {
       setPdfError('An unexpected error occurred. Please try again later.');
     } finally {
       setPdfLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (selectedPdfUrl && currentInvoiceId) {
+      const downloadLink = document.createElement('a');
+      downloadLink.href = selectedPdfUrl;
+      downloadLink.download = `Invoice_${currentInvoiceId}.pdf`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
     }
   };
 
@@ -821,14 +834,9 @@ const InvoicesPage = () => {
                 Try Again
               </button>
               {selectedPdfUrl && (
-                <a 
-                  href={selectedPdfUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="open-tab-button"
-                >
-                  Open in New Tab
-                </a>
+                <button onClick={handleDownloadPdf} className="download-button">
+                  Download
+                </button>
               )}
               <button onClick={handleClosePdfModal} className="close-error-button">
                 Close
@@ -839,14 +847,9 @@ const InvoicesPage = () => {
         {!pdfLoading && !pdfError && selectedPdfUrl && (
           <div className="pdf-viewer-container">
             <div className="pdf-toolbar">
-              <a 
-                href={selectedPdfUrl} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="open-tab-button"
-              >
-                Open in New Tab
-              </a>
+              <button onClick={handleDownloadPdf} className="download-button">
+                Download
+              </button>
             </div>
             <iframe
               src={selectedPdfUrl}
