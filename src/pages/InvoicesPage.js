@@ -114,74 +114,78 @@ const InvoicesPage = () => {
       const token = localStorage.getItem('token');
       console.log(`Fetching PDF for invoice ID: ${invoiceId}`);
       
-      // Add a timeout to the request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      // Create a direct link to the PDF that will open in a new tab as fallback
+      const pdfUrl = `https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`;
+      const directPdfLink = document.createElement('a');
+      directPdfLink.href = pdfUrl;
+      directPdfLink.target = '_blank';
       
       try {
-        const response = await axios.get(`https://api-innoice.onrender.com/api/invoices/${invoiceId}/pdf`, {
-          headers: { 
-            Authorization: `Bearer ${token}`,
+        // Use fetch instead of axios for better blob handling
+        const response = await fetch(pdfUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
             'Accept': 'application/pdf'
           },
-          responseType: 'blob',
-          signal: controller.signal
+          // Set a longer timeout
+          signal: AbortSignal.timeout(60000) // 60 second timeout
         });
         
-        clearTimeout(timeoutId);
+        console.log('PDF response status:', response.status);
         
-        console.log('PDF response received:', response.status, response.headers);
-        
-        // Check if we got a PDF (by content type or checking if it's a blob)
-        const contentType = response.headers['content-type'];
-        if (contentType && contentType.includes('application/pdf')) {
-          // Create a blob from the PDF data
-          const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          setSelectedPdfUrl(pdfUrl);
-        } else {
-          // If the response is not a PDF, try to parse it as JSON for error details
+        if (!response.ok) {
+          // If response is not OK, try to parse error message
+          const errorText = await response.text();
+          let errorMessage = `Server error (${response.status})`;
+          
           try {
-            const reader = new FileReader();
-            reader.onload = () => {
-              try {
-                const errorData = JSON.parse(reader.result);
-                setPdfError(`Error: ${errorData.message || 'Unknown error'}`);
-              } catch (parseErr) {
-                setPdfError('Failed to load PDF. The server returned an invalid response.');
-              }
-            };
-            reader.onerror = () => {
-              setPdfError('Failed to load PDF. Please try again later.');
-            };
-            reader.readAsText(response.data);
-          } catch (blobErr) {
-            setPdfError('Failed to process server response. Please try again later.');
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorMessage;
+          } catch (e) {
+            // If not JSON, use the text as is if it's not too long
+            if (errorText && errorText.length < 100) {
+              errorMessage = errorText;
+            }
           }
+          
+          throw new Error(errorMessage);
         }
-      } catch (axiosErr) {
-        clearTimeout(timeoutId);
         
-        console.error('Error fetching PDF:', axiosErr);
+        // Check content type
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/pdf')) {
+          console.warn('Response is not a PDF, content type:', contentType);
+          
+          // If not a PDF, show error and offer direct link
+          setPdfError('Server did not return a PDF. Click "Open in New Tab" to try direct download.');
+          setSelectedPdfUrl(pdfUrl);
+          return;
+        }
         
-        if (axiosErr.name === 'AbortError' || axiosErr.code === 'ECONNABORTED') {
-          setPdfError('Request timed out. The server took too long to respond.');
-        } else if (axiosErr.response) {
-          // The server responded with an error status
-          if (axiosErr.response.status === 404) {
-            setPdfError('Invoice not found. It may have been deleted.');
-          } else if (axiosErr.response.status === 500) {
-            setPdfError('Server error while generating PDF. Please try again later.');
-          } else {
-            setPdfError(`Error (${axiosErr.response.status}): ${axiosErr.response.data?.message || 'Unknown error'}`);
-          }
-        } else if (axiosErr.request) {
-          // The request was made but no response was received
-          setPdfError('No response from server. Please check your connection and try again.');
+        // Get the PDF data
+        const pdfBlob = await response.blob();
+        
+        // Check if blob is valid and not empty
+        if (!pdfBlob || pdfBlob.size === 0) {
+          throw new Error('Received empty PDF data');
+        }
+        
+        // Create object URL
+        const objectUrl = URL.createObjectURL(pdfBlob);
+        setSelectedPdfUrl(objectUrl);
+        
+      } catch (fetchError) {
+        console.error('Error fetching PDF:', fetchError);
+        
+        if (fetchError.name === 'AbortError' || fetchError.name === 'TimeoutError') {
+          setPdfError('Request timed out. The server took too long to respond. Try opening in a new tab.');
         } else {
-          // Something else caused the error
-          setPdfError('Failed to load PDF: ' + axiosErr.message);
+          setPdfError(`${fetchError.message}. Try opening in a new tab.`);
         }
+        
+        // Store the direct URL for "Open in New Tab" button
+        setSelectedPdfUrl(pdfUrl);
       }
     } catch (err) {
       console.error('Unexpected error in handleViewPdf:', err);
@@ -816,6 +820,16 @@ const InvoicesPage = () => {
               }} className="retry-button">
                 Try Again
               </button>
+              {selectedPdfUrl && (
+                <a 
+                  href={selectedPdfUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="open-tab-button"
+                >
+                  Open in New Tab
+                </a>
+              )}
               <button onClick={handleClosePdfModal} className="close-error-button">
                 Close
               </button>
@@ -823,14 +837,26 @@ const InvoicesPage = () => {
           </div>
         )}
         {!pdfLoading && !pdfError && selectedPdfUrl && (
-          <iframe
-            src={selectedPdfUrl}
-            title="Invoice PDF"
-            width="100%"
-            height="100%"
-            style={{ border: 'none' }}
-            allowFullScreen
-          />
+          <div className="pdf-viewer-container">
+            <div className="pdf-toolbar">
+              <a 
+                href={selectedPdfUrl} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="open-tab-button"
+              >
+                Open in New Tab
+              </a>
+            </div>
+            <iframe
+              src={selectedPdfUrl}
+              title="Invoice PDF"
+              width="100%"
+              height="100%"
+              style={{ border: 'none' }}
+              allowFullScreen
+            />
+          </div>
         )}
       </div>
     </div>
